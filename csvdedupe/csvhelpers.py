@@ -21,11 +21,16 @@ import dedupe
 import json
 import argparse
 
-def preProcess(column):
+def preProcess(key, column, configuration):
     """
     Do a little bit of data cleaning. Things like casing, extra spaces, 
     quotes and new lines are ignored.
     """
+
+    # JL change to handle sets
+    if configuration['field_definitions'][key]['type'] == 'Set':
+        return frozenset(json.loads(column))
+
     column = re.sub('  +', ' ', column)
     column = re.sub('\n', ' ', column)
     column = column.strip().strip('"').strip("'").lower().strip()
@@ -34,7 +39,8 @@ def preProcess(column):
     return column
 
 
-def readData(input_file, field_names, delimiter=',', prefix=None):
+def readData(input_file, field_names, delimiter=',', prefix=None,
+        configuration=None):
     """
     Read in our data from a CSV file and create a dictionary of records, 
     where the key is a unique record ID and each value is a dict 
@@ -44,12 +50,14 @@ def readData(input_file, field_names, delimiter=',', prefix=None):
     with no integers skipped. The smallest valued unique id must be 0 or
     1. Expect this requirement will likely be relaxed in the future.**
     """
+    if not configuration:
+        raise Exception("configuration argument is not really optional")
 
     data = {}
     
     reader = csv.DictReader(StringIO(input_file),delimiter=delimiter)
     for i, row in enumerate(reader):
-        clean_row = {k: preProcess(v) for (k, v) in row.items() if k is not None}
+        clean_row = {k: preProcess(k, v, configuration) for (k, v) in row.items() if k is not None}
         if prefix:
             row_id = u"%s|%s" % (prefix, i)
         else:
@@ -169,6 +177,29 @@ def writeLinkedResults(clustered_pairs, input_1, input_2, output_file,
         for i, row in enumerate(input_2):
             if i not in seen_2:
                 writer.writerow([None] * length_1 + row)
+
+
+def JLwriteLinkedResults(clustered_pairs, input_1, input_2, output_file,
+                       inner_join=False):
+    if not inner_join:
+        raise Exception("Only expected to be used with inner_join.")
+
+    logging.info('saving unique results to: %s' % output_file)
+
+    writer = csv.DictWriter(output_file, fieldnames=[
+        'roil', 'scraped', 'confidence'])
+    writer.writeheader()
+    get_num = lambda x: x.split('|')[1]
+    for record in clustered_pairs:
+        pair, confidence = record
+        scraped = get_num(pair[0])
+        roil = get_num(pair[1])
+        writer.writerow({
+            'roil': roil,
+            'scraped': scraped,
+            'confidence': str(confidence),
+        })
+
 
 class CSVCommand(object) :
     def __init__(self) :

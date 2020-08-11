@@ -44,14 +44,15 @@ class CSVLink(csvhelpers.CSVCommand):
             self.field_names_2 = self.configuration['field_names_2']
         else:
             raise self.parser.error(
-                "You must provide field_names of field_names_1 and field_names_2")
+                "You must provide field_names or field_names_1 and field_names_2")
 
         self.inner_join = self.configuration.get('inner_join', False)
 
         if self.field_definition is None :
-            self.field_definition = [{'field': field,
-                                      'type': 'String'}
-                                     for field in self.field_names_1]
+            self.field_definition = [
+                {'field': field,
+                    'type': self.configuration['field_definitions'][field]['type']}
+                for field in self.field_names_1]
 
     def add_args(self) :
         # positional arguments
@@ -72,10 +73,12 @@ class CSVLink(csvhelpers.CSVCommand):
 
         data_1 = csvhelpers.readData(self.input_1, self.field_names_1,
                                     delimiter=self.delimiter,
-                                    prefix='input_1')
+                                    prefix='input_1',
+                                    configuration=self.configuration)
         data_2 = csvhelpers.readData(self.input_2, self.field_names_2,
                                     delimiter=self.delimiter,
-                                    prefix='input_2')
+                                    prefix='input_2',
+                                    configuration=self.configuration)
 
         # sanity check for provided field names in CSV file
         for field in self.field_names_1:
@@ -164,7 +167,7 @@ class CSVLink(csvhelpers.CSVCommand):
 
         logging.info('# duplicate sets %s' % len(clustered_dupes))
 
-        write_function = csvhelpers.writeLinkedResults
+        write_function = csvhelpers.JLwriteLinkedResults
         # write out our results
 
         if self.output_file:

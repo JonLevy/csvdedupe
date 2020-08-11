@@ -14,7 +14,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name = "csvdedupe",
+    name = "jl_fork_csvdedupe",
     version = '0.1.20',
     description="Command line tools for deduplicating and merging csv files",
     author="Forest Gregg, Derek Eder",
