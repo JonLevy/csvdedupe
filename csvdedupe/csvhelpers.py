@@ -187,16 +187,16 @@ def JLwriteLinkedResults(clustered_pairs, input_1, input_2, output_file,
     logging.info('saving unique results to: %s' % output_file)
 
     writer = csv.DictWriter(output_file, fieldnames=[
-        'roil', 'scraped', 'confidence'])
+        'roil', 'outside', 'confidence'])
     writer.writeheader()
     get_num = lambda x: x.split('|')[1]
     for record in clustered_pairs:
         pair, confidence = record
-        scraped = get_num(pair[0])
+        outside = get_num(pair[0])
         roil = get_num(pair[1])
         writer.writerow({
             'roil': roil,
-            'scraped': scraped,
+            'outside': outside,
             'confidence': str(confidence),
         })
 
